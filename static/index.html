@@ -502,6 +502,65 @@ body {
 .lookup-btn-arrow { font-size: 16px; transition: transform 0.2s; }
 .lookup-btn:hover .lookup-btn-arrow { transform: translateX(3px); }
 
+/* ─── WALLET BALANCE ─── */
+.wallet-box {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--rule);
+  border-radius: 7px;
+}
+
+.wallet-box-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wallet-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  font-weight: 600;
+}
+
+.wallet-amount {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.wallet-amount.loading { color: var(--ink-light); }
+.wallet-amount.error   { color: #b3361f; font-size: 13px; }
+
+.wallet-refresh {
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.wallet-refresh:hover { color: #175c30; }
+.wallet-refresh:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.wallet-sub {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-light);
+}
+
 /* ─── CARD WRAPPER ─── */
 .card-section {
   margin-bottom: 48px;
@@ -1093,6 +1152,16 @@ body {
         <span>Retrieve Slip</span>
         <span class="lookup-btn-arrow">→</span>
       </button>
+
+      <!-- Wallet balance -->
+      <div class="wallet-box">
+        <div class="wallet-box-row">
+          <span class="wallet-label">Wallet Balance</span>
+          <span class="wallet-amount loading" id="walletAmount">Checking…</span>
+        </div>
+        <button class="wallet-refresh" id="walletRefreshBtn">↻ Refresh</button>
+        <p class="wallet-sub" id="walletSub"></p>
+      </div>
     </div>
 
   </div>
@@ -1406,6 +1475,45 @@ async function doLookup() {
 
 newBtn.addEventListener('click', doLookup);
 newInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(); });
+
+// ── Wallet balance ──
+const walletAmount   = $('walletAmount');
+const walletSub      = $('walletSub');
+const walletRefreshBtn = $('walletRefreshBtn');
+
+async function fetchBalance() {
+  walletRefreshBtn.disabled = true;
+  walletAmount.textContent = 'Checking…';
+  walletAmount.className = 'wallet-amount loading';
+  walletSub.textContent = '';
+
+  try {
+    const res = await fetch('/api/balance');
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not fetch balance');
+    }
+
+    walletAmount.textContent = data.formatted_balance || `₦${Number(data.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+    walletAmount.className = 'wallet-amount';
+
+    const parts = [];
+    if (data.username) parts.push(data.username);
+    if (data.api_requests_today !== null && data.api_limit !== null) {
+      parts.push(`${data.api_requests_today} / ${data.api_limit} requests today`);
+    }
+    walletSub.textContent = parts.join(' · ');
+  } catch (err) {
+    walletAmount.textContent = err.message || 'Failed to load balance';
+    walletAmount.className = 'wallet-amount error';
+  } finally {
+    walletRefreshBtn.disabled = false;
+  }
+}
+
+walletRefreshBtn.addEventListener('click', fetchBalance);
+fetchBalance();
 </script>
 
 

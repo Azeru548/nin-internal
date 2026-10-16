@@ -15,6 +15,7 @@ app.use(express.static('static'));
 // ─── NIN Verification Provider ──────────────────────────
 const API_KEY = 'ninbvn_e4ce715a19852fa0b0515f9e';
 const PROVIDER_URL = 'https://ninbvnportal.com.ng/api/nin-verification';
+const BALANCE_URL = 'https://ninbvnportal.com.ng/api/balance';
 
 // ══════════════════════════════════════════════════════════
 //  POST /api/lookup  –  Verify NIN & save to history
@@ -87,6 +88,37 @@ app.post('/api/lookup', async (req, res) => {
     });
   } catch (err) {
     console.error('Provider error:', err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  GET /api/balance  –  Wallet balance (free provider endpoint)
+// ══════════════════════════════════════════════════════════
+app.get('/api/balance', async (req, res) => {
+  try {
+    const response = await fetch(BALANCE_URL, {
+      method: 'GET',
+      headers: {
+        'x-api-key': API_KEY,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.status !== 'success') {
+      return res.status(400).json({ error: data.message || 'Could not fetch balance' });
+    }
+
+    res.json({
+      balance: data.data?.balance ?? null,
+      formatted_balance: data.data?.formatted_balance || '',
+      username: data.data?.username || '',
+      api_requests_today: data.data?.api_requests_today ?? null,
+      api_limit: data.data?.api_limit ?? null,
+    });
+  } catch (err) {
+    console.error('Balance error:', err);
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
