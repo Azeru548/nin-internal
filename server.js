@@ -16,6 +16,8 @@ app.use(express.static('static'));
 const API_KEY = 'ninbvn_e4ce715a19852fa0b0515f9e';
 const PROVIDER_URL = 'https://ninbvnportal.com.ng/api/nin-verification';
 const BALANCE_URL = 'https://ninbvnportal.com.ng/api/balance';
+// BVN is served by the same provider/host as NIN, on its own endpoint.
+const BVN_URL = 'https://ninbvnportal.com.ng/api/bvn-verification';
 
 // ══════════════════════════════════════════════════════════
 //  POST /api/lookup  –  Verify NIN & save to history
@@ -88,6 +90,80 @@ app.post('/api/lookup', async (req, res) => {
     });
   } catch (err) {
     console.error('Provider error:', err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  POST /api/bvn  –  Verify BVN & save to history
+// ══════════════════════════════════════════════════════════
+app.post('/api/bvn', async (req, res) => {
+  const { bvn, consent } = req.body;
+
+  if (!bvn || !/^\d{11}$/.test(bvn)) {
+    return res.status(400).json({ error: 'Invalid BVN — exactly 11 digits required' });
+  }
+  if (consent !== true) {
+    return res.status(400).json({ error: 'User consent is required' });
+  }
+
+  try {
+    const response = await fetch(BVN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+      },
+      body: JSON.stringify({ bvn, consent: true }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.status !== 'success') {
+      return res.status(400).json({ error: data.message || 'Verification failed' });
+    }
+
+    // Provider wraps the record two levels deep and uses camelCase field names.
+    const d = data.data?.data || data.data || data;
+    if (!d) {
+      return res.status(500).json({ error: 'Unexpected response structure' });
+    }
+
+    const fullname = [d.firstName, d.middleName, d.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .toUpperCase();
+
+    // ─── Save to Firebase Firestore (separate collection) ──
+    await db.collection('bvn_lookups').add({
+      bvn,
+      fullname,
+      phone: d.phoneNumber1 || d.phoneNumber2 || '',
+      type: 'bvn',
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.json({
+      firstname: d.firstName || '',
+      middlename: d.middleName || '',
+      lastname: d.lastName || '',
+      fullname,
+      bvn: d.bvn || bvn,
+      phone: d.phoneNumber1 || d.phoneNumber2 || '',
+      email: d.email || '',
+      dob: d.dateOfBirth || '',
+      gender: d.gender || '',
+      state_of_origin: d.stateOfOrigin || '',
+      state_of_residence: d.stateOfResidence || '',
+      lga_of_origin: d.lgaOfOrigin || '',
+      residential_address: d.residentialAddress || '',
+      nationality: d.nationality || '',
+      marital_status: d.maritalStatus || '',
+      photo: d.base64Image || '',
+      reportID: data.reportID || '',
+    });
+  } catch (err) {
+    console.error('BVN provider error:', err);
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
