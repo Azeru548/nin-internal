@@ -255,6 +255,41 @@ body {
   color: var(--green);
 }
 
+/* ─── SITE NAV ─── */
+.site-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--rule);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--ink-mid);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.site-nav a:hover {
+  border-color: var(--green-mid);
+  color: var(--green);
+}
+
+.site-nav a.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+
 .site-header-right {
   max-width: 280px;
   flex-shrink: 0;
@@ -1071,6 +1106,11 @@ body {
   <div class="site-header-left">
     <p class="site-kicker">Dmiebi Ventures · Cyber Café Tool</p>
     <h1 class="site-title">NIN Slip<br><em>Retrieval Tool</em></h1>
+    <nav class="site-nav">
+      <a href="/" class="active">🪪 NIN Slip</a>
+      <a href="/bvn.html">🆔 BVN Verification</a>
+      <a href="/history.html">📋 History</a>
+    </nav>
   </div>
   <div class="site-header-right">
     <p class="site-desc">A convenience tool used at Dmiebi Ventures to help customers retrieve and print their National Identification Number slip. Enter a customer's NIN to generate a printable slip instantly.</p>
@@ -1271,30 +1311,7 @@ body {
       <span class="std-tag">NDPR Aware</span>
     </div>
   </div>
-<a href="/bvn.html" style="
-    display: inline-block;
-    margin-left: 16px;
-    padding: 8px 16px;
-    border: 1.5px solid #0f766e;
-    border-radius: 7px;
-    color: #0f766e;
-    font-weight: 600;
-    text-decoration: none;
-    font-size: 13px;
-    letter-spacing: 0.04em;
-  ">🆔 BVN Verification</a>
-<a href="/history.html" style="
-    display: inline-block;
-    margin-left: 10px;
-    padding: 8px 16px;
-    border: 1.5px solid #2ea043;
-    border-radius: 7px;
-    color: #2ea043;
-    font-weight: 600;
-    text-decoration: none;
-    font-size: 13px;
-    letter-spacing: 0.04em;
-  ">📋 History</a>
+
 </main>
 
 
