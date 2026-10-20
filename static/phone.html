@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phone Lookup — Dmiebi Ventures</title>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --canvas:      #eef2f8;
+  --surface:     #ffffff;
+  --surface-2:   #e5ecf5;
+  --ink:         #0f172a;
+  --ink-mid:     #3f4a5c;
+  --ink-light:   #6b7686;
+  --rule:        #d8e0ea;
+  --rule-2:      #b6c2d2;
+
+  --indigo-900:  #0b1533;
+  --indigo:      #16265c;
+  --indigo-600:  #1e3a8a;
+  --teal:        #0d9488;
+  --teal-600:    #0f766e;
+  --teal-soft:   #e6f5f3;
+
+  --ok:          #0f766e;
+  --err:         #b3261e;
+
+  --sans:  'DM Sans', system-ui, sans-serif;
+  --mono:  'DM Mono', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 16px; }
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding: 14px 28px;
+  background: linear-gradient(90deg, var(--indigo-900), var(--indigo) 60%, var(--teal-600));
+  color: #fff;
+}
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.28);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 12px; letter-spacing: .04em;
+}
+.topbar-brand b { font-weight: 600; font-size: 14.5px; }
+.topbar-brand span { display: block; font-size: 11.5px; opacity: .75; }
+.topbar-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.topbar-nav a {
+  color: rgba(255,255,255,.85); text-decoration: none;
+  font-size: 13px; font-weight: 500;
+  padding: 7px 13px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.22);
+}
+.topbar-nav a:hover { background: rgba(255,255,255,.12); color: #fff; }
+.topbar-nav a.active { background: #fff; color: var(--indigo); border-color: #fff; }
+
+/* ─── LAYOUT ─── */
+.page { max-width: 1180px; margin: 0 auto; padding: 26px 28px 60px; }
+
+/* ─── BANNER ─── */
+.notice {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--teal-soft);
+  border: 1px solid #bfe3df;
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13.5px; color: var(--ink-mid);
+  margin-bottom: 22px;
+}
+.notice b { color: var(--ink); }
+
+/* ─── HEADER ─── */
+.page-head { margin-bottom: 22px; }
+.page-kicker {
+  font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--teal-600); margin-bottom: 6px;
+}
+.page-title { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+.page-title em { font-style: normal; color: var(--indigo); }
+.page-sub { color: var(--ink-mid); font-size: 14.5px; max-width: 62ch; margin-top: 8px; }
+
+/* ─── WORKSPACE ─── */
+.workspace { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+@media (max-width: 940px) { .workspace { grid-template-columns: 1fr; } }
+
+/* ─── PANEL ─── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(15,23,42,.06);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface-2);
+  font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-mid);
+}
+.badge-demo {
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  color: var(--teal-600); background: var(--teal-soft);
+  border: 1px solid #bfe3df; border-radius: 20px; padding: 3px 10px;
+}
+.panel-body { padding: 18px; }
+
+/* ─── DEMO TOGGLE ─── */
+.toggle-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 16px;
+  background: var(--surface-2); border-radius: 9px;
+  cursor: pointer; user-select: none;
+}
+.track {
+  width: 38px; height: 22px; border-radius: 20px;
+  background: var(--rule-2); position: relative; transition: background .2s; flex: none;
+}
+.track.on { background: var(--teal); }
+.thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%; background: #fff;
+  transition: transform .2s;
+}
+.track.on .thumb { transform: translateX(16px); }
+.toggle-row .t-label { font-size: 13.5px; font-weight: 500; }
+.toggle-row .t-sub { font-size: 12px; color: var(--ink-light); margin-left: auto; }
+
+/* ─── SEARCH TYPE SWITCH ─── */
+.mode-switch {
+  display: flex; gap: 4px; padding: 4px;
+  background: var(--surface-2); border-radius: 9px; margin-bottom: 16px;
+}
+.mode-btn {
+  flex: 1; padding: 8px 10px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--ink-mid); background: transparent;
+  border: none; border-radius: 7px; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.mode-btn:hover { color: var(--ink); }
+.mode-btn.active { background: var(--indigo); color: #fff; }
+
+/* ─── FIELD ─── */
+.field-group { margin-bottom: 14px; }
+.field-label {
+  display: block; font-size: 12.5px; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-mid); margin-bottom: 6px;
+}
+.field-input {
+  width: 100%; padding: 11px 13px;
+  font-family: var(--mono); font-size: 16px; letter-spacing: .12em;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--rule-2); border-radius: 8px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field-input::placeholder { color: var(--ink-light); letter-spacing: .06em; }
+.field-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+
+/* ─── CONSENT ─── */
+.consent {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 12.5px; color: var(--ink-mid); line-height: 1.45;
+  padding: 11px 12px; margin-bottom: 14px;
+  background: var(--surface-2); border-radius: 9px;
+}
+.consent input { margin-top: 2px; accent-color: var(--teal); flex: none; width: 15px; height: 15px; }
+
+/* ─── PRICE + BUTTON ─── */
+.price-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 13px; color: var(--ink-mid);
+  padding: 0 2px 12px;
+}
+.price-row .price { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--indigo); }
+.btn-lookup {
+  width: 100%; padding: 13px 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--sans); font-size: 15px; font-weight: 600; color: #fff;
+  background: linear-gradient(90deg, var(--indigo), var(--teal-600));
+  border: none; border-radius: 9px; cursor: pointer;
+  transition: filter .15s, transform .1s;
+}
+.btn-lookup:hover { filter: brightness(1.08); }
+.btn-lookup:active { transform: translateY(1px); }
+.btn-lookup:disabled { opacity: .6; cursor: progress; }
+
+/* ─── INLINE LOADER ─── */
+.inline-loader { display: none; align-items: center; gap: 10px; padding: 12px 2px; font-size: 13px; color: var(--ink-mid); }
+.inline-loader.active { display: flex; }
+.inline-bar { display: flex; gap: 3px; }
+.inline-bar span {
+  width: 4px; height: 16px; border-radius: 2px; background: var(--teal);
+  animation: pulse 1s ease-in-out infinite;
+}
+.inline-bar span:nth-child(2) { animation-delay: .12s; }
+.inline-bar span:nth-child(3) { animation-delay: .24s; }
+.inline-bar span:nth-child(4) { animation-delay: .36s; }
+.inline-bar span:nth-child(5) { animation-delay: .48s; }
+@keyframes pulse { 0%,100% { transform: scaleY(.4); opacity: .5; } 50% { transform: scaleY(1); opacity: 1; } }
+
+/* ─── WALLET ─── */
+.wallet {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 16px; padding: 12px 14px;
+  border: 1.5px solid var(--rule); border-radius: 9px;
+  background: var(--surface-2);
+}
+.wallet .w-label { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-light); }
+.wallet .w-amount { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--ink); }
+.wallet .w-amount.loading { color: var(--ink-light); }
+.wallet .w-amount.error { color: var(--err); font-size: 12.5px; font-family: var(--sans); }
+.wallet button {
+  border: none; background: none; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--teal-600);
+}
+.wallet button:hover { text-decoration: underline; }
+.wallet button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ─── CARD PREVIEW SECTION ─── */
+.preview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.preview-label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); }
+.btn-print {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 600; color: var(--indigo);
+  background: #fff; border: 1.5px solid var(--rule-2);
+  border-radius: 8px; padding: 8px 15px; cursor: pointer;
+}
+.btn-print:hover { border-color: var(--indigo); }
+
+/* ════════════ THE IDENTITY CARD ════════════ */
+.phone-card {
+  position: relative;
+  width: 100%; max-width: 815px; margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(11,21,51,.16);
+  overflow: hidden;
+  font-family: var(--sans);
+}
+
+.card-top {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 26px;
+  background: linear-gradient(105deg, var(--indigo-900) 0%, var(--indigo-600) 55%, var(--teal-600) 100%);
+  color: #fff;
+}
+.card-emblem {
+  width: 54px; height: 54px; flex: none; border-radius: 12px;
+  background: rgba(255,255,255,.13);
+  border: 1.5px solid rgba(255,255,255,.35);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 15px; letter-spacing: .06em;
+}
+.card-titles { flex: 1; }
+.card-titles h1 { font-size: 18px; font-weight: 600; letter-spacing: .06em; }
+.card-titles h2 { font-size: 12px; font-weight: 400; letter-spacing: .22em; text-transform: uppercase; opacity: .82; margin-top: 2px; }
+.card-country {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  padding: 5px 10px; border-radius: 7px;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28);
+}
+
+.card-body { display: grid; grid-template-columns: 170px 1fr; gap: 24px; padding: 26px; }
+@media (max-width: 620px) { .card-body { grid-template-columns: 1fr; } }
+
+.photo-box {
+  width: 170px; height: 210px; border-radius: 10px; overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--rule);
+  display: grid; place-items: center;
+}
+.photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; align-content: start; }
+.fields .f-span2 { grid-column: 1 / -1; }
+.f-label { font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); }
+.f-value { font-size: 15px; font-weight: 500; color: var(--ink); word-break: break-word; }
+.f-value.mono { font-family: var(--mono); }
+
+.card-foot {
+  display: flex; align-items: center; gap: 22px;
+  padding: 20px 26px;
+  border-top: 1px solid var(--rule);
+  background: linear-gradient(180deg, #fff, var(--surface-2));
+}
+.qr-wrap {
+  flex: none; padding: 8px; background: #fff;
+  border: 1px solid var(--rule); border-radius: 10px;
+}
+.qr-wrap #qrcode { width: 96px; height: 96px; }
+.qr-wrap #qrcode img, .qr-wrap #qrcode canvas { width: 96px !important; height: 96px !important; }
+.id-block { flex: 1; }
+.id-block .b-label { font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-light); }
+.id-number {
+  font-family: var(--mono); font-size: 30px; font-weight: 500; letter-spacing: .06em;
+  color: var(--indigo); margin: 3px 0 8px;
+}
+.id-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-light); }
+.id-meta b { color: var(--ink-mid); font-weight: 500; font-family: var(--mono); }
+
+.card-watermark {
+  position: absolute; right: -10px; bottom: 44px;
+  font-size: 92px; font-weight: 700; letter-spacing: .08em;
+  color: rgba(22,38,92,.05); pointer-events: none; user-select: none;
+}
+
+.card-verify-strip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 26px;
+  background: var(--indigo-900); color: rgba(255,255,255,.8);
+  font-size: 11.5px; letter-spacing: .04em;
+}
+.card-verify-strip .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; flex: none; }
+
+/* ─── FOOTER ─── */
+.site-foot {
+  max-width: 1180px; margin: 0 auto; padding: 24px 28px 40px;
+  color: var(--ink-light); font-size: 12.5px; line-height: 1.6;
+  border-top: 1px solid var(--rule); margin-top: 30px;
+}
+.site-foot b { color: var(--ink-mid); }
+
+/* ─── PRINT ─── */
+@page { size: auto; margin: 8mm; }
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .page { padding: 0; max-width: none; }
+  .workspace { display: block; }
+  .preview-head { display: none; }
+  .phone-card {
+    box-shadow: none; border: 1px solid #bbb;
+    max-width: none; width: 100%;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .card-top, .card-foot, .card-verify-strip, .card-emblem, .card-country {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+}
+
+/* ─── REDUCED MOTION ─── */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar no-print">
+  <div class="topbar-brand">
+    <div class="brand-mark">DV</div>
+    <div>
+      <b>Dmiebi Ventures</b>
+      <span>Cyber Café Tools</span>
+    </div>
+  </div>
+  <nav class="topbar-nav">
+    <a href="/">NIN Slip</a>
+    <a href="/bvn.html">BVN Verification</a>
+    <a href="/phone.html" class="active">Phone Lookup</a>
+    <a href="/history.html">History</a>
+  </nav>
+</div>
+
+<main class="page">
+
+  <!-- NOTICE -->
+  <div class="notice no-print">
+    <span>ℹ</span>
+    <p><b>Paid reverse search.</b> Each phone lookup charges the café wallet. Confirm the customer's consent and the price below before submitting. This tool is operated by Dmiebi Ventures and is not affiliated with NIMC, NIBSS, or any government body.</p>
+  </div>
+
+  <!-- HEADER -->
+  <header class="page-head no-print">
+    <p class="page-kicker">Phone Number Search</p>
+    <h1 class="page-title">Trace a phone number to its <em>registered identity</em></h1>
+    <p class="page-sub">Enter a customer's Nigerian phone number to retrieve the identity record it is registered to — name, photo, date of birth, state details and ID number — and generate a printable confirmation.</p>
+  </header>
+
+  <!-- WORKSPACE -->
+  <div class="workspace">
+
+    <!-- LOOKUP PANEL -->
+    <section class="panel no-print">
+      <div class="panel-head">
+        <span>Phone Lookup</span>
+        <span class="badge-demo" id="demoBadge">Demo Mode</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="toggle-row" id="demoToggleRow">
+          <div class="track on" id="toggleTrack"><div class="thumb"></div></div>
+          <span class="t-label">Use demo data</span>
+          <span class="t-sub">Preview the card</span>
+        </div>
+
+        <div class="mode-switch" id="modeSwitch">
+          <button class="mode-btn active" data-mode="nin" type="button">NIN Search</button>
+          <button class="mode-btn" data-mode="bvn" type="button">BVN Search</button>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="phoneInput">Phone Number</label>
+          <input class="field-input" type="tel" id="phoneInput" placeholder="e.g. 08012345678" inputmode="numeric" />
+        </div>
+
+        <label class="consent">
+          <input type="checkbox" id="consentBox" />
+          <span>I confirm the customer has <b>consented</b> to this reverse search and understands a fee will be charged.</span>
+        </label>
+
+        <div class="price-row">
+          <span>Search fee</span>
+          <span class="price" id="priceLabel">₦150.00</span>
+        </div>
+
+        <div class="inline-loader" id="inlineLoader">
+          <div class="inline-bar"><span></span><span></span><span></span><span></span><span></span></div>
+          <span id="loaderText">Searching NIN records…</span>
+        </div>
+
+        <button class="btn-lookup" id="lookupBtn">
+          <span>Search &amp; Generate Record</span>
+          <span>→</span>
+        </button>
+
+        <div class="wallet">
+          <div>
+            <div class="w-label">Wallet Balance</div>
+            <div class="w-amount loading" id="walletAmount">Checking…</div>
+          </div>
+          <button id="walletRefreshBtn">↻ Refresh</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CARD PREVIEW -->
+    <section>
+      <div class="preview-head no-print">
+        <span class="preview-label">Generated Search Record</span>
+        <button class="btn-print" onclick="window.print()"><span>⎙</span> Print Record</button>
+      </div>
+
+      <div class="phone-card" id="phoneCard">
+        <div class="card-top">
+          <div class="card-emblem" id="cardEmblem">NIN</div>
+          <div class="card-titles">
+            <h1>PHONE NUMBER SEARCH</h1>
+            <h2 id="cardSubtitle">NIN Identity Record</h2>
+          </div>
+          <div class="card-country">NGA</div>
+        </div>
+
+        <div class="card-body">
+          <div class="photo-box">
+            <img id="photo" src="https://placehold.co/340x420/e5ecf5/6b7686?text=PHOTO" alt="Photo">
+          </div>
+          <div class="fields">
+            <div class="f-span2">
+              <div class="f-label">Surname</div>
+              <div class="f-value" id="surname">OKONKWO</div>
+            </div>
+            <div class="f-span2">
+              <div class="f-label">Given Names</div>
+              <div class="f-value" id="givenNames">ADAORA CHINWE</div>
+            </div>
+            <div>
+              <div class="f-label">Date of Birth</div>
+              <div class="f-value" id="dob">22 MAR 1995</div>
+            </div>
+            <div>
+              <div class="f-label">Sex</div>
+              <div class="f-value" id="gender">F</div>
+            </div>
+            <div>
+              <div class="f-label">Registered Phone</div>
+              <div class="f-value mono" id="regPhone">08012345678</div>
+            </div>
+            <div>
+              <div class="f-label">Marital Status</div>
+              <div class="f-value" id="maritalStatus">—</div>
+            </div>
+            <div>
+              <div class="f-label">State of Birth</div>
+              <div class="f-value" id="birthState">Anambra</div>
+            </div>
+            <div>
+              <div class="f-label">LGA of Birth</div>
+              <div class="f-value" id="birthLga">Onitsha South</div>
+            </div>
+            <div>
+              <div class="f-label">State of Residence</div>
+              <div class="f-value" id="stateResidence">Lagos</div>
+            </div>
+            <div>
+              <div class="f-label">Number Searched</div>
+              <div class="f-value mono" id="searchedPhone">08012345678</div>
+            </div>
+            <div class="f-span2">
+              <div class="f-label">Residential Address</div>
+              <div class="f-value" id="address">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-foot">
+          <div class="qr-wrap"><div id="qrcode"></div></div>
+          <div class="id-block">
+            <div class="b-label" id="idLabel">National Identification Number</div>
+            <div class="id-number" id="idDisplay">100 3138 9362</div>
+            <div class="id-meta">
+              <span>Report <b id="reportId">—</b></span>
+              <span>Issued <b id="issueDate">—</b></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-watermark" id="watermark">NIN</div>
+
+        <div class="card-verify-strip">
+          <span class="dot"></span>
+          <span>Verified via Dmiebi Ventures · Not a government-issued document</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-foot no-print">
+  <b>Dmiebi Ventures — Phone Lookup Tool.</b> Internal cyber café utility. Identity data is retrieved from a licensed verification provider and is not printed, sold, or shared. This tool is not affiliated with NIMC, NIBSS, the Central Bank of Nigeria, or any government agency. Handle customer identity data responsibly and in line with NDPR.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// Price shown to staff before a paid submit.
+const SEARCH_PRICE = 150;
+$('priceLabel').textContent = '₦' + SEARCH_PRICE.toLocaleString('en-NG', { minimumFractionDigits: 2 });
+
+// ── Search mode: NIN (default) or BVN ──
+let mode = 'nin';
+
+function setMode(next) {
+  mode = next;
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  $('loaderText').textContent = mode === 'nin' ? 'Searching NIN records…' : 'Searching BVN records…';
+  populateCard(demoModeOn ? demoDataFor(mode) : demoDataFor(mode)); // card always mirrors the active mode's shape
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+
+// ── Demo mode ──
+let demoModeOn = true;
+const toggleRow = $('demoToggleRow');
+const toggleTrack = $('toggleTrack');
+const demoBadge = $('demoBadge');
+
+toggleRow.addEventListener('click', () => {
+  demoModeOn = !demoModeOn;
+  toggleTrack.classList.toggle('on', demoModeOn);
+  demoBadge.style.display = demoModeOn ? '' : 'none';
+});
+
+const DEMO_PHOTO = 'https://placehold.co/340x420/e5ecf5/6b7686?text=PHOTO';
+
+function demoDataFor(m) {
+  if (m === 'bvn') {
+    return {
+      type: 'bvn-phone',
+      firstname: 'ADAORA',
+      middlename: 'CHINWE',
+      surname: 'OKONKWO',
+      bvn: '22350591353',
+      gender: 'F',
+      birthdate: '1995-03-22',
+      phone: '2348012345678',
+      maritalstatus: 'Single',
+      birthstate: 'Anambra',
+      birthlga: 'Onitsha South',
+      state_of_residence: 'Lagos',
+      address: '12 Zik Avenue, GRA, Ikeja, Lagos',
+      photo: DEMO_PHOTO,
+      reportID: 'BVN_251019185403_9C21A4',
+      searched: '08012345678',
+    };
+  }
+  return {
+    type: 'nin-phone',
+    firstname: 'ADAORA',
+    middlename: 'CHINWE',
+    surname: 'OKONKWO',
+    nin: '10031389362',
+    gender: 'F',
+    birthdate: '1995-03-22',
+    phone: '2348012345678',
+    maritalstatus: 'Single',
+    birthstate: 'Anambra',
+    birthlga: 'Onitsha South',
+    state_of_residence: 'Lagos',
+    address: '12 Zik Avenue, GRA, Ikeja, Lagos',
+    photo: DEMO_PHOTO,
+    reportID: 'NIN_251019185403_9C21A4',
+    searched: '08012345678',
+  };
+}
+
+// ── Formatting helpers ──
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+// Handles ISO "1995-03-22" and provider-style "15-May-90" (DD-Mon-YY).
+function formatDob(str) {
+  if (!str) return '—';
+  const v = String(str).trim();
+
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${Number(iso[3])} ${MONTHS[Number(iso[2]) - 1]} ${iso[1]}`;
+
+  const dmy = v.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+  if (dmy) {
+    const mon = MONTHS.indexOf(dmy[2].toUpperCase());
+    let year = dmy[3];
+    if (year.length === 2) year = (Number(year) > 30 ? '19' : '20') + year;
+    return `${Number(dmy[1])} ${mon >= 0 ? MONTHS[mon] : dmy[2].toUpperCase()} ${year}`;
+  }
+  return v;
+}
+
+// Providers return "2348012345678"; display local "08012345678".
+function formatPhone(p) {
+  if (!p) return '—';
+  let d = String(p).replace(/\D/g, '');
+  if (d.startsWith('234') && d.length === 13) d = '0' + d.slice(3);
+  return d;
+}
+
+function formatId(num, groups) {
+  const d = String(num || '').replace(/\D/g, '');
+  let out = '';
+  for (let i = 0; i < d.length; i++) {
+    if (i > 0 && groups.includes(i)) out += ' ';
+    out += d[i];
+  }
+  return out;
+}
+
+function getTodayFormatted() {
+  const now = new Date();
+  return `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+// ── Render ──
+function populateCard(data) {
+  let photoSrc = data.photo || DEMO_PHOTO;
+  if (photoSrc && !photoSrc.startsWith('data:') && !photoSrc.startsWith('http')) {
+    photoSrc = 'data:image/jpeg;base64,' + photoSrc;
+  }
+
+  const given = [data.firstname, data.middlename].filter(Boolean).join(' ');
+  const isBvn = mode === 'bvn';
+  const idNum = isBvn ? (data.bvn || '') : (data.nin || '');
+
+  $('cardEmblem').textContent   = isBvn ? 'BVN' : 'NIN';
+  $('cardSubtitle').textContent = isBvn ? 'BVN Identity Record' : 'NIN Identity Record';
+  $('watermark').textContent    = isBvn ? 'BVN' : 'NIN';
+  $('idLabel').textContent      = isBvn ? 'Bank Verification Number' : 'National Identification Number';
+
+  $('surname').textContent      = (data.surname || '—').toUpperCase();
+  $('givenNames').textContent   = (given || '—').toUpperCase();
+  $('dob').textContent          = formatDob(data.birthdate);
+  $('gender').textContent       = (data.gender || '').charAt(0).toUpperCase() || '—';
+  $('regPhone').textContent     = formatPhone(data.phone);
+  $('maritalStatus').textContent = data.maritalstatus || '—';
+  $('birthState').textContent   = data.birthstate || '—';
+  $('birthLga').textContent     = data.birthlga || '—';
+  $('stateResidence').textContent = data.state_of_residence || '—';
+  $('searchedPhone').textContent = formatPhone(data.searched);
+  $('address').textContent      = data.address || '—';
+  $('idDisplay').textContent    = idNum
+    ? formatId(idNum, [3, 7])
+    : '—';
+  $('reportId').textContent     = data.reportID || '—';
+  $('issueDate').textContent    = getTodayFormatted();
+  $('photo').src                = photoSrc;
+
+  const qr = $('qrcode');
+  qr.innerHTML = '';
+  const qrPayload = idNum || (data.searched ? 'tel:' + data.searched : '');
+  if (qrPayload && typeof QRCode !== 'undefined') {
+    new QRCode(qr, { text: qrPayload, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.H });
+  }
+}
+
+// ── Lookup ──
+const btn = $('lookupBtn');
+const input = $('phoneInput');
+const consentBox = $('consentBox');
+const inlineLoader = $('inlineLoader');
+
+async function doLookup() {
+  const raw = input.value.trim();
+
+  if (!/^\+?[\d\s()-]{10,17}$/.test(raw)) {
+    alert('Please enter a valid Nigerian phone number (e.g. 08012345678).');
+    return;
+  }
+
+  if (demoModeOn) {
+    populateCard({ ...demoDataFor(mode), searched: raw.replace(/\D/g, '').slice(-11) });
+    return;
+  }
+
+  if (!consentBox.checked) {
+    alert('Please confirm the customer has consented before running a paid search.');
+    return;
+  }
+
+  btn.disabled = true;
+  inlineLoader.classList.add('active');
+
+  try {
+    const endpoint = mode === 'bvn' ? '/api/bvn-phone' : '/api/nin-phone';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: raw, consent: true }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || 'Search failed. Please try again.');
+      return;
+    }
+
+    populateCard({ ...data, searched: raw.replace(/\D/g, '').slice(-11) });
+    fetchBalance();
+  } catch (err) {
+    alert('Network error. Please check your connection and try again.');
+  } finally {
+    btn.disabled = false;
+    inlineLoader.classList.remove('active');
+  }
+}
+
+btn.addEventListener('click', doLookup);
+input.addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(); });
+
+// ── Wallet balance ──
+const walletAmount = $('walletAmount');
+const walletRefreshBtn = $('walletRefreshBtn');
+
+async function fetchBalance() {
+  walletRefreshBtn.disabled = true;
+  walletAmount.textContent = 'Checking…';
+  walletAmount.className = 'w-amount loading';
+
+  try {
+    const res = await fetch('/api/balance');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not fetch balance');
+
+    walletAmount.textContent = data.formatted_balance
+      || '₦' + Number(data.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+    walletAmount.className = 'w-amount';
+  } catch (err) {
+    walletAmount.textContent = err.message || 'Failed to load';
+    walletAmount.className = 'w-amount error';
+  } finally {
+    walletRefreshBtn.disabled = false;
+  }
+}
+
+walletRefreshBtn.addEventListener('click', fetchBalance);
+fetchBalance();
+
+// Initial card (demo data, NIN mode)
+populateCard(demoDataFor('nin'));
+</script>
+
+</body>
+</html>

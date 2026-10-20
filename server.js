@@ -18,6 +18,19 @@ const PROVIDER_URL = 'https://ninbvnportal.com.ng/api/nin-verification';
 const BALANCE_URL = 'https://ninbvnportal.com.ng/api/balance';
 // BVN is served by the same provider/host as NIN, on its own endpoint.
 const BVN_URL = 'https://ninbvnportal.com.ng/api/bvn-verification';
+// Reverse phone search: phone number → identity, same provider.
+const NIN_PHONE_URL = 'https://ninbvnportal.com.ng/api/nin-phone';
+const BVN_PHONE_URL = 'https://ninbvnportal.com.ng/api/bvn-phone';
+
+// Accepts 0XXXXXXXXXX, 234XXXXXXXXXX, +234XXXXXXXXXX or a bare 10-digit
+// number; returns the local 11-digit format the provider expects, or null.
+function normalizePhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (/^0\d{10}$/.test(digits)) return digits;
+  if (/^234\d{10}$/.test(digits)) return '0' + digits.slice(3);
+  if (/^\d{10}$/.test(digits)) return '0' + digits;
+  return null;
+}
 
 // ══════════════════════════════════════════════════════════
 //  POST /api/lookup  –  Verify NIN & save to history
@@ -164,6 +177,160 @@ app.post('/api/bvn', async (req, res) => {
     });
   } catch (err) {
     console.error('BVN provider error:', err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
+// ══════════════════════════════════════════════════
+//  POST /api/nin-phone  –  Phone number → NIN identity search
+// ══════════════════════════════════════════════════
+app.post('/api/nin-phone', async (req, res) => {
+  const { phone, consent } = req.body;
+
+  const msisdn = normalizePhone(phone);
+  if (!msisdn) {
+    return res.status(400).json({ error: 'Invalid phone number — enter a valid Nigerian number (e.g. 08012345678)' });
+  }
+  if (consent !== true) {
+    return res.status(400).json({ error: 'User consent is required' });
+  }
+
+  try {
+    const response = await fetch(NIN_PHONE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+      },
+      body: JSON.stringify({ phone: msisdn, consent: true }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.status !== 'success') {
+      return res.status(400).json({ error: data.message || 'Phone search failed' });
+    }
+
+    const d = data.data?.data;
+    if (!d) {
+      return res.status(500).json({ error: 'Unexpected response structure' });
+    }
+
+    const fullname = [d.firstname, d.middlename, d.surname]
+      .filter(Boolean)
+      .join(' ')
+      .toUpperCase();
+
+    const address = [
+      d.residence_address,
+      d.residence_town,
+      d.residence_state,
+    ].filter(Boolean).join(', ');
+
+    // ─── Save to Firebase Firestore ────────────────────────
+    await db.collection('phone_lookups').add({
+      type: 'nin-phone',
+      phone_searched: msisdn,
+      nin: d.nin || '',
+      fullname,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.json({
+      type: 'nin-phone',
+      firstname: d.firstname || '',
+      middlename: d.middlename || '',
+      surname: d.surname || '',
+      fullname,
+      nin: d.nin || '',
+      gender: d.gender || '',
+      birthdate: d.birthdate || '',
+      phone: d.telephoneno || '',
+      birthstate: d.birthstate || '',
+      birthlga: d.birthlga || '',
+      maritalstatus: d.maritalstatus || '',
+      state_of_residence: d.residence_state || '',
+      address,
+      photo: d.photo || '',
+      reportID: data.reportID || '',
+    });
+  } catch (err) {
+    console.error('NIN phone search error:', err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
+// ══════════════════════════════════════════════════
+//  POST /api/bvn-phone  –  Phone number → BVN identity search
+//  (provider may report this sub-service unavailable — message is passed through)
+// ══════════════════════════════════════════════════
+app.post('/api/bvn-phone', async (req, res) => {
+  const { phone, consent } = req.body;
+
+  const msisdn = normalizePhone(phone);
+  if (!msisdn) {
+    return res.status(400).json({ error: 'Invalid phone number — enter a valid Nigerian number (e.g. 08012345678)' });
+  }
+  if (consent !== true) {
+    return res.status(400).json({ error: 'User consent is required' });
+  }
+
+  try {
+    const response = await fetch(BVN_PHONE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+      },
+      body: JSON.stringify({ phone: msisdn, consent: true }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.status !== 'success') {
+      return res.status(400).json({ error: data.message || 'BVN phone search failed' });
+    }
+
+    const d = data.data?.data || data.data || data;
+    if (!d) {
+      return res.status(500).json({ error: 'Unexpected response structure' });
+    }
+
+    const fullname = [d.firstName, d.middleName, d.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .toUpperCase();
+
+    // ─── Save to Firebase Firestore ────────────────────────
+    await db.collection('phone_lookups').add({
+      type: 'bvn-phone',
+      phone_searched: msisdn,
+      bvn: d.bvn || '',
+      fullname,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.json({
+      type: 'bvn-phone',
+      firstname: d.firstName || '',
+      middlename: d.middleName || '',
+      surname: d.lastName || '',
+      fullname,
+      bvn: d.bvn || '',
+      gender: d.gender || '',
+      birthdate: d.dateOfBirth || '',
+      phone: d.phoneNumber1 || d.phoneNumber2 || '',
+      maritalstatus: d.maritalStatus || '',
+      birthstate: d.stateOfOrigin || '',
+      birthlga: d.lgaOfOrigin || '',
+      state_of_residence: d.stateOfResidence || '',
+      address: d.residentialAddress || '',
+      nationality: d.nationality || '',
+      photo: d.base64Image || '',
+      reportID: data.reportID || '',
+    });
+  } catch (err) {
+    console.error('BVN phone search error:', err);
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
